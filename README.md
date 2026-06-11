@@ -88,7 +88,16 @@ Requires GNU Make 4.x — `brew install make` installs it as `gmake`. The target
 
 ## How It Works (Technical)
 
-MirrorGuard creates a `CGEventTap` at `kCGHIDEventTap` with `headInsertEventTap`, so it sees keyboard events before WindowServer's hotkey dispatch. The callback consumes `keyDown`/`keyUp` events whose key code is F1 (122) or brightness-down (145) **and** carry the Command flag, returning `nil` to discard them. Every other event is passed through unchanged. The tap auto-re-enables if macOS disables it on timeout or user input.
+MirrorGuard creates a `CGEventTap` at `kCGHIDEventTap` with `headInsertEventTap`, so it sees keyboard events before WindowServer's hotkey dispatch. It discards the mirroring combo (Command held) regardless of which form the F1/brightness-down key arrives in, returning `nil`. Every other event — including bare brightness with no modifier — passes through unchanged. The tap auto-re-enables if macOS disables it on timeout or user input.
+
+The F1/brightness-down key is delivered in **two different forms** depending on the keyboard, and the callback handles both:
+
+- **Regular key event** (`keyDown`/`keyUp`) with key code **122** (plain F1, standard-function-key mode) or **145** (brightness-down) — this is what external keyboards send.
+- **System-defined HID event** (`NX_SYSDEFINED`, CGEvent type `14`, `NSEvent` subtype `8`) carrying NX key code **3** (`NX_KEYTYPE_BRIGHTNESS_DOWN`) — this is what the **built-in Apple keyboard** sends; it is not a key code at all, so the event mask must include `(1 << 14)` and the callback must decode the `NSEvent` payload.
+
+Matching only the key-code form blocks the shortcut on external keyboards but silently misses it on the built-in keyboard — both forms are required.
+
+There is no `hidutil` remapping and no persistent system change — the guard exists only while the app is running, and removing the app removes it entirely.
 
 There is no `hidutil` remapping and no persistent system change — the guard exists only while the app is running, and removing the app removes it entirely.
 
