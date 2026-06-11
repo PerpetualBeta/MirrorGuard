@@ -99,8 +99,6 @@ Matching only the key-code form blocks the shortcut on external keyboards but si
 
 There is no `hidutil` remapping and no persistent system change — the guard exists only while the app is running, and removing the app removes it entirely.
 
-There is no `hidutil` remapping and no persistent system change — the guard exists only while the app is running, and removing the app removes it entirely.
-
 ## Troubleshooting
 
 ### ⌘F1 still toggles mirroring
