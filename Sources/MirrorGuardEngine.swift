@@ -16,8 +16,9 @@ private var _mgEventTap: CFMachPort?
 /// We match both, so the guard works regardless of that System Settings
 /// toggle. Verified empirically: with media keys on, ⌘F1 arrives as a normal
 /// keyDown with code 145 and the Command flag set.
-private let _f1KeyCode: Int64 = 122            // kVK_F1
-private let _brightnessDownKeyCode: Int64 = 145 // F1 in media mode
+private let _f1KeyCode: Int64 = 122             // kVK_F1 (standard-function-key mode)
+private let _brightnessDownKeyCode: Int64 = 145 // F1/brightness-down on external keyboards (regular key event)
+private let _nxBrightnessDownKey: Int64 = 3     // NX_KEYTYPE_BRIGHTNESS_DOWN — built-in keyboard, delivered as a system-defined event
 
 private func mirrorGuardTapCallback(
     proxy: CGEventTapProxy,
@@ -34,14 +35,29 @@ private func mirrorGuardTapCallback(
         return Unmanaged.passRetained(event)
     }
 
-    if type == .keyDown || type == .keyUp {
+    // ⌘ is required in every case below. Bare F1 / brightness (no modifier)
+    // always passes straight through, so normal brightness control is never
+    // affected — we only ever swallow the mirroring combo.
+    let hasCommand = event.flags.contains(.maskCommand)
+
+    // Form 1 — regular key event. External keyboards (and any keyboard in
+    // standard-function-key mode) deliver F1 as a key code: 122 (plain F1)
+    // or 145 (brightness-down).
+    if hasCommand, type == .keyDown || type == .keyUp {
         let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
-        // Swallow ⌘ + F1 (either key-code form) so it can't toggle mirroring.
-        // The Command requirement is deliberate: bare F1 / brightness-down
-        // (no modifier) passes straight through, so normal brightness control
-        // keeps working.
-        if (keyCode == _brightnessDownKeyCode || keyCode == _f1KeyCode)
-            && event.flags.contains(.maskCommand) {
+        if keyCode == _f1KeyCode || keyCode == _brightnessDownKeyCode {
+            return nil
+        }
+    }
+
+    // Form 2 — system-defined HID event. The built-in Apple keyboard delivers
+    // its F1/brightness-down key as an NX_SYSDEFINED event (raw type 14,
+    // subtype 8) carrying NX key code 3, not a key code. ⌘ + that is the
+    // mirroring combo on the built-in keyboard, so swallow it too.
+    if hasCommand, type.rawValue == 14,
+       let ns = NSEvent(cgEvent: event), ns.subtype.rawValue == 8 {
+        let nxKey = (ns.data1 & 0xFFFF0000) >> 16
+        if nxKey == _nxBrightnessDownKey {
             return nil
         }
     }
@@ -110,6 +126,7 @@ final class MirrorGuardEngine {
 
         let mask: CGEventMask = (1 << CGEventType.keyDown.rawValue)
                               | (1 << CGEventType.keyUp.rawValue)
+                              | (1 << 14)   // NX_SYSDEFINED — built-in keyboard's brightness/F1 key arrives here, not as a key code
 
         // HID-level tap: sits *before* WindowServer's hotkey dispatch, so we
         // can swallow ⌘F1 before macOS acts on it as the mirroring hotkey.
