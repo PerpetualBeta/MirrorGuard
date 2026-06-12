@@ -8,6 +8,8 @@ import ApplicationServices
 // pattern proven in HyperCaps.
 
 private var _mgEventTap: CFMachPort?
+// The tap's dedicated run loop, so stop() can stop it from the main actor.
+private var _mgTapRunLoop: CFRunLoop?
 
 /// ⌘F1 toggles display mirroring, but which key code F1 emits depends on the
 /// keyboard's F-key mode:
@@ -75,6 +77,7 @@ final class MirrorGuardEngine {
     var permissionGranted: Bool = false
 
     private var eventTap: CFMachPort?
+    private var tapThread: Thread?
     private var permissionTimer: Timer?
 
     // MARK: - Public API
@@ -92,6 +95,12 @@ final class MirrorGuardEngine {
         if let tap = eventTap {
             CGEvent.tapEnable(tap: tap, enable: false)
         }
+        // Tear down the dedicated tap thread by stopping its run loop.
+        if let runLoop = _mgTapRunLoop {
+            CFRunLoopStop(runLoop)
+        }
+        _mgTapRunLoop = nil
+        tapThread = nil
         eventTap = nil
         _mgEventTap = nil
     }
@@ -145,9 +154,31 @@ final class MirrorGuardEngine {
 
         eventTap = tap
         _mgEventTap = tap
-        let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
-        CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
-        CGEvent.tapEnable(tap: tap, enable: true)
+
+        // Service the tap on a dedicated thread — never the main run loop.
+        // A .cghidEventTap sits in the system-wide HID event stream; if the
+        // main run loop is busy with UI work the tap can't be drained promptly,
+        // which backs up that stream and freezes system UI that depends on it.
+        // Concretely: with the NX_SYSDEFINED (type 14) events in our mask, a
+        // main-run-loop tap wedged the *entire menu-bar layout engine* while
+        // MirrorGuard ran (new status items couldn't seat, "Allow in Menu Bar"
+        // toggles went inert). A private run loop keeps the tap drained
+        // independently of the app's UI work.
+        let thread = Thread {
+            // Reference the module-level tap rather than capturing the local,
+            // so the closure doesn't capture a non-Sendable CFMachPort.
+            guard let tap = _mgEventTap else { return }
+            let runLoop = CFRunLoopGetCurrent()
+            _mgTapRunLoop = runLoop
+            let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
+            CFRunLoopAddSource(runLoop, source, .commonModes)
+            CGEvent.tapEnable(tap: tap, enable: true)
+            CFRunLoopRun()
+        }
+        thread.name = "cc.jorviksoftware.MirrorGuard.eventtap"
+        thread.qualityOfService = .userInteractive
+        tapThread = thread
+        thread.start()
         return true
     }
 }

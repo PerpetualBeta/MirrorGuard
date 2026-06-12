@@ -24,14 +24,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         NSApp.setActivationPolicy(.accessory)
 
         createStatusItem()
-        // TEMP DIAGNOSTIC — Sparkle init and the event-tap engine disabled to
-        // bisect what orphans the status item. Restore both once resolved.
-        // _ = sparkleUpdater  // forces lazy init so Sparkle starts at launch
-        //
-        // Task {
-        //     await engine.requestPermissionAndStart()
-        //     updateIcon()
-        // }
+        _ = sparkleUpdater  // forces lazy init so Sparkle starts at launch
+
+        // Start trapping ⌘F1 (prompts for Accessibility on first launch).
+        Task {
+            await engine.requestPermissionAndStart()
+            updateIcon()
+        }
 
         // Redraw the status icon when the display configuration changes — the
         // menu bar's effective thickness can shrink (e.g. moving from a notched
