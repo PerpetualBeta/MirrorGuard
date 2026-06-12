@@ -56,14 +56,34 @@ enum JorvikMenuBarPill {
             let config = symbolConfig.applying(
                 NSImage.SymbolConfiguration(paletteColors: [tint, tint])
             )
-            let sized = symbol.withSymbolConfiguration(config) ?? symbol
+            let sized = cappedToBarHeight(symbol.withSymbolConfiguration(config) ?? symbol)
             sized.isTemplate = false
             return sized
         }
 
-        let sized = symbol.withSymbolConfiguration(symbolConfig) ?? symbol
+        let sized = cappedToBarHeight(symbol.withSymbolConfiguration(symbolConfig) ?? symbol)
         sized.isTemplate = true
         return sized
+    }
+
+    /// Scale a glyph down so it never renders taller than the menu bar's
+    /// drawable region. The pill path caps height inside `composedPillIcon`;
+    /// this is the equivalent for the pill-*off* path. Without it a tall SF
+    /// Symbol — e.g. a `.slash` variant, which is ~22pt at pointSize 15 — can
+    /// equal or exceed the bar's own thickness (22pt on a standard bar) and get
+    /// clipped clean out of sight, so the item is created but invisible. Only
+    /// oversized glyphs are scaled; anything already within the cap is returned
+    /// untouched, preserving the template/colour state the caller set.
+    private static func cappedToBarHeight(_ image: NSImage) -> NSImage {
+        let cap = NSStatusBar.system.thickness - 2
+        guard cap > 0, image.size.height > cap else { return image }
+        let scaled = NSSize(width: image.size.width * (cap / image.size.height), height: cap)
+        let out = NSImage(size: scaled, flipped: false) { rect in
+            image.draw(in: rect)
+            return true
+        }
+        out.isTemplate = image.isTemplate
+        return out
     }
 
     /// Produces a status-bar icon for a custom-drawn glyph. The closure is called

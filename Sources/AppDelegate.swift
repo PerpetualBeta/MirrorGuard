@@ -67,25 +67,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func createStatusItem() {
         guard JorvikStatusItemVisibility.isVisible else { return }
-
-        // Seed a sane slot the *first* time the item is ever created. A brand-new
-        // status item with no remembered position can land at the far right of the
-        // bar — past the system Control Center items and clipped at the display
-        // edge — on a crowded or multi-display menu bar (seen on MirrorGuard's
-        // first install: x≈2520 on a 2560-wide display, invisible). Seeding a
-        // preferred position drops it into the third-party zone. Lower number =
-        // further right; ~300 lands it among third-party icons, left of the
-        // system items. One-shot: once set, a user ⌘-drag (persisted via the
-        // autosaveName below) overrides it.
-        let positionKey = "NSStatusItem Preferred Position \(Self.statusItemAutosaveName)"
-        if UserDefaults.standard.object(forKey: positionKey) == nil {
-            UserDefaults.standard.set(300, forKey: positionKey)
-        }
-
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        // autosaveName persists the item's slot across launches and lets the
-        // user's ⌘-drag stick. It's also the key the preferred-position seed
-        // above is written under, so both must use the same name.
+        // autosaveName persists the item's slot across launches and lets a
+        // user ⌘-drag stick. No position is seeded — macOS places it like any
+        // other status item.
         statusItem?.autosaveName = Self.statusItemAutosaveName
         updateIcon()
 
