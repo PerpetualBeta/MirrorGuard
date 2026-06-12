@@ -147,11 +147,15 @@ final class MirrorGuardEngine {
         let mask: CGEventMask = (1 << CGEventType.keyDown.rawValue)
                               | (1 << CGEventType.keyUp.rawValue)
 
-        // HID-level tap: sits *before* WindowServer's hotkey dispatch, so we
-        // can swallow ⌘F1 before macOS acts on it as the mirroring hotkey.
-        // A session-level tap can be too late for system hotkeys.
+        // Session-level tap. A HID-level tap (.cghidEventTap) sits earlier in
+        // the pipeline, but in this process it prevented MirrorGuard's *own*
+        // status item from ever seating in the menu bar — the item was created
+        // but parked just below the bar (HyperCaps, which uses a session tap,
+        // has no such trouble). Session level keeps the icon working; verify it
+        // still swallows ⌘F1 before the system mirrors (it intercepts before
+        // app delivery, which is where the mirroring hotkey is handled).
         guard let tap = CGEvent.tapCreate(
-            tap: .cghidEventTap,
+            tap: .cgSessionEventTap,
             place: .headInsertEventTap,
             options: .defaultTap,
             eventsOfInterest: mask,
