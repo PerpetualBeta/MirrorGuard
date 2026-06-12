@@ -133,9 +133,19 @@ final class MirrorGuardEngine {
     private func tryCreateEventTap() -> Bool {
         if eventTap != nil { return true }
 
+        // NX_SYSDEFINED (type 14) is intentionally NOT tapped. Adding it put
+        // MirrorGuard at the head of the system-wide HID stream for that event
+        // class, which wedged the macOS menu-bar layout engine whenever the app
+        // ran — status items (including MirrorGuard's own) couldn't seat and
+        // "Allow in Menu Bar" toggles went inert. A dedicated tap thread reduced
+        // but did not remove the interference, so the interception itself is the
+        // problem, not where it's serviced. We tap key events only, which still
+        // blocks ⌘F1 on external/Magic keyboards (key codes 122/145). Built-in
+        // keyboard coverage (its F1 arrives only as NX_SYSDEFINED) needs a
+        // non-tap mechanism — tracked as a follow-up. The Form-2 handler below
+        // is retained but inert without the mask bit.
         let mask: CGEventMask = (1 << CGEventType.keyDown.rawValue)
                               | (1 << CGEventType.keyUp.rawValue)
-                              | (1 << 14)   // NX_SYSDEFINED — built-in keyboard's brightness/F1 key arrives here, not as a key code
 
         // HID-level tap: sits *before* WindowServer's hotkey dispatch, so we
         // can swallow ⌘F1 before macOS acts on it as the mirroring hotkey.
