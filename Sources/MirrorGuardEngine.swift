@@ -133,29 +133,23 @@ final class MirrorGuardEngine {
     private func tryCreateEventTap() -> Bool {
         if eventTap != nil { return true }
 
-        // NX_SYSDEFINED (type 14) is intentionally NOT tapped. Adding it put
-        // MirrorGuard at the head of the system-wide HID stream for that event
-        // class, which wedged the macOS menu-bar layout engine whenever the app
-        // ran — status items (including MirrorGuard's own) couldn't seat and
-        // "Allow in Menu Bar" toggles went inert. A dedicated tap thread reduced
-        // but did not remove the interference, so the interception itself is the
-        // problem, not where it's serviced. We tap key events only, which still
-        // blocks ⌘F1 on external/Magic keyboards (key codes 122/145). Built-in
-        // keyboard coverage (its F1 arrives only as NX_SYSDEFINED) needs a
-        // non-tap mechanism — tracked as a follow-up. The Form-2 handler below
-        // is retained but inert without the mask bit.
+        // Tap NX_SYSDEFINED (type 14) as well: the built-in keyboard's
+        // F1/brightness key arrives as a system-defined event, not a key code,
+        // so it's the only way to cover the built-in keyboard. This event class
+        // is what the menu-bar layout engine also rides on — tapping it on the
+        // *main* run loop wedged the whole menu bar; the dedicated tap thread
+        // (below) drains it promptly and keeps the menu bar healthy.
         let mask: CGEventMask = (1 << CGEventType.keyDown.rawValue)
                               | (1 << CGEventType.keyUp.rawValue)
+                              | (1 << 14)   // NX_SYSDEFINED — built-in keyboard's F1/brightness key
 
-        // Session-level tap. A HID-level tap (.cghidEventTap) sits earlier in
-        // the pipeline, but in this process it prevented MirrorGuard's *own*
-        // status item from ever seating in the menu bar — the item was created
-        // but parked just below the bar (HyperCaps, which uses a session tap,
-        // has no such trouble). Session level keeps the icon working; verify it
-        // still swallows ⌘F1 before the system mirrors (it intercepts before
-        // app delivery, which is where the mirroring hotkey is handled).
+        // HID-level tap: sits before WindowServer's hotkey dispatch so we can
+        // swallow ⌘F1 before macOS acts on it as the mirroring hotkey (a
+        // session-level tap is too late for system hotkeys). Serviced on a
+        // dedicated thread below so this — including the type-14 events — never
+        // backs up on the main run loop and wedges the menu bar.
         guard let tap = CGEvent.tapCreate(
-            tap: .cgSessionEventTap,
+            tap: .cghidEventTap,
             place: .headInsertEventTap,
             options: .defaultTap,
             eventsOfInterest: mask,

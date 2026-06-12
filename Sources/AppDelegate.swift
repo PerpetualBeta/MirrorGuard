@@ -26,13 +26,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         createStatusItem()
         _ = sparkleUpdater  // forces lazy init so Sparkle starts at launch
 
-        // TEMP DIAGNOSTIC — engine (and thus the event tap) fully disabled to
-        // settle whether the tap is what keeps the icon from seating. Restore
-        // once resolved.
-        // Task {
-        //     await engine.requestPermissionAndStart()
-        //     updateIcon()
-        // }
+        // Start trapping ⌘F1 (prompts for Accessibility on first launch).
+        Task {
+            await engine.requestPermissionAndStart()
+            updateIcon()
+        }
 
         // Redraw the status icon when the display configuration changes — the
         // menu bar's effective thickness can shrink (e.g. moving from a notched
@@ -65,7 +63,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     // MARK: - Status item
 
-    private static let statusItemAutosaveName = "MirrorGuardStatusItem"
+    // Fresh slot id. The previous name ("MirrorGuardStatusItem") had picked up a
+    // sticky far-right menu-bar placement (behind the system clock) that macOS
+    // refused to override even after wiping the app's defaults — a new name
+    // gives the item a clean slot so it lands in the normal third-party zone.
+    private static let statusItemAutosaveName = "MirrorGuardMenuBarItem"
 
     func createStatusItem() {
         guard JorvikStatusItemVisibility.isVisible else { return }
@@ -79,40 +81,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let menu = NSMenu()
         menu.delegate = self
         statusItem?.menu = menu
-
-        // TEMP DIAGNOSTIC — trace the status-item window position over the first
-        // few seconds of launch to find what orphans it. Remove once resolved.
-        diagStatus("created")
-        for delay in [0.3, 0.8, 1.5, 3.0, 5.0] {
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-                self?.diagStatus("t+\(delay)")
-            }
-        }
-    }
-
-    // TEMP DIAGNOSTIC — appends status-item window state to
-    // ~/Library/Logs/MirrorGuard/statusdiag.log. Remove once resolved.
-    private func diagStatus(_ tag: String) {
-        let b = statusItem?.button
-        let w = b?.window
-        let line = "[\(tag)] statusItem=\(statusItem != nil)"
-            + " nsIsVisible=\(statusItem?.isVisible ?? false)"
-            + " length=\(statusItem?.length ?? -99)"
-            + " button=\(b != nil) image=\(b?.image != nil)"
-            + " window=\(w != nil) winFrame=\(w?.frame ?? .zero)"
-            + " winVisible=\(w?.isVisible ?? false)"
-            + " screen=\(w?.screen?.frame ?? .zero)"
-            + " policy=\(NSApp.activationPolicy().rawValue)"
-            + " NSScreen.main=\(NSScreen.main?.frame ?? .zero) screens=\(NSScreen.screens.count)\n"
-        let dir = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Library/Logs/MirrorGuard", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let url = dir.appendingPathComponent("statusdiag.log")
-        if let h = try? FileHandle(forWritingTo: url) {
-            h.seekToEndOfFile(); h.write(Data(line.utf8)); try? h.close()
-        } else {
-            try? Data(line.utf8).write(to: url)
-        }
     }
 
     func applyStatusItemVisibility() {
