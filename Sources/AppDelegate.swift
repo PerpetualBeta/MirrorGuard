@@ -24,13 +24,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         NSApp.setActivationPolicy(.accessory)
 
         createStatusItem()
-        _ = sparkleUpdater  // forces lazy init so Sparkle starts at launch
-
-        // Start trapping ⌘F1 (prompts for Accessibility on first launch).
-        Task {
-            await engine.requestPermissionAndStart()
-            updateIcon()
-        }
+        // TEMP DIAGNOSTIC — Sparkle init and the event-tap engine disabled to
+        // bisect what orphans the status item. Restore both once resolved.
+        // _ = sparkleUpdater  // forces lazy init so Sparkle starts at launch
+        //
+        // Task {
+        //     await engine.requestPermissionAndStart()
+        //     updateIcon()
+        // }
 
         // Redraw the status icon when the display configuration changes — the
         // menu bar's effective thickness can shrink (e.g. moving from a notched
@@ -100,7 +101,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             + " window=\(w != nil) winFrame=\(w?.frame ?? .zero)"
             + " winVisible=\(w?.isVisible ?? false)"
             + " screen=\(w?.screen?.frame ?? .zero)"
-            + " policy=\(NSApp.activationPolicy().rawValue)\n"
+            + " policy=\(NSApp.activationPolicy().rawValue)"
+            + " NSScreen.main=\(NSScreen.main?.frame ?? .zero) screens=\(NSScreen.screens.count)\n"
         let dir = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent("Library/Logs/MirrorGuard", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
