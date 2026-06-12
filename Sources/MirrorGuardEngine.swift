@@ -143,13 +143,15 @@ final class MirrorGuardEngine {
                               | (1 << CGEventType.keyUp.rawValue)
                               | (1 << 14)   // NX_SYSDEFINED — built-in keyboard's F1/brightness key
 
-        // HID-level tap: sits before WindowServer's hotkey dispatch so we can
-        // swallow ⌘F1 before macOS acts on it as the mirroring hotkey (a
-        // session-level tap is too late for system hotkeys). Serviced on a
-        // dedicated thread below so this — including the type-14 events — never
-        // backs up on the main run loop and wedges the menu bar.
+        // Session-level tap. A HID-level tap (.cghidEventTap) sits earlier, but
+        // in this process it orphans MirrorGuard's *own* status item — with a
+        // clean install, engine-off seats the icon and engine-on (HID) parks it
+        // off-screen, while HyperCaps' session tap has no such trouble. Session
+        // level keeps the icon; verify it's still early enough to swallow ⌘F1
+        // before the system mirrors (if not, the fallback is to disable the
+        // mirroring hotkey at source rather than tap for it).
         guard let tap = CGEvent.tapCreate(
-            tap: .cghidEventTap,
+            tap: .cgSessionEventTap,
             place: .headInsertEventTap,
             options: .defaultTap,
             eventsOfInterest: mask,
