@@ -13,6 +13,12 @@ Two formats on every release — both signed and notarised, pick whichever suits
 - **[Installer (`.pkg`)](https://github.com/PerpetualBeta/MirrorGuard/releases/latest/download/MirrorGuard.pkg)** — recommended for first-time installs. Double-click to run; macOS Installer places the app in `/Applications` without quarantine or App Translocation.
 - **[Download (`.zip`)](https://github.com/PerpetualBeta/MirrorGuard/releases/latest)** — unzip and drag `MirrorGuard.app` to your Applications folder.
 
+Or install it with [Homebrew](https://brew.sh):
+
+```sh
+brew install --cask perpetualbeta/jorvik/mirrorguard
+```
+
 After installation:
 
 1. Launch MirrorGuard — a display icon appears in your menu bar
