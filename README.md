@@ -1,6 +1,6 @@
 # MirrorGuard
 
-A tiny macOS utility that stops accidental display mirroring. It silently swallows the ⌘F1 shortcut — the easy-to-fumble combo that toggles screen mirroring — so a stray keypress can't disrupt your setup. Everything else, including normal brightness control, is left completely untouched.
+A tiny macOS utility that stops accidental display mirroring. It silently swallows the `command` `F1` shortcut — the easy-to-fumble combo that toggles screen mirroring — so a stray keypress can't disrupt your setup. Everything else, including normal brightness control, is left completely untouched.
 
 ## Requirements
 
@@ -26,28 +26,28 @@ After installation:
 
 ## How It Works
 
-On a Mac, **⌘F1** toggles display mirroring. It sits right next to combinations you reach for constantly, so it's easy to trigger by accident — and an unexpected mirror flip is disruptive, especially mid-presentation or mid-task.
+On a Mac, `command` `F1` toggles display mirroring. It sits right next to combinations you reach for constantly, so it's easy to trigger by accident — and an unexpected mirror flip is disruptive, especially mid-presentation or mid-task.
 
-MirrorGuard installs a global event tap at the HID level — *before* macOS acts on the shortcut — and discards the ⌘F1 keystroke. The mirroring toggle simply never fires.
+MirrorGuard installs a global event tap at the HID level — *before* macOS acts on the shortcut — and discards the `command` `F1` keystroke. The mirroring toggle simply never fires.
 
 | You press | What happens |
 |-----------|--------------|
-| ⌘F1 | Nothing (consumed silently — no mirroring) |
+| `command` `F1` | Nothing (consumed silently — no mirroring) |
 | F1 alone | Normal brightness-down, untouched |
 | Any other key | Untouched |
 
-The Command requirement is deliberate: MirrorGuard only intercepts F1 **when ⌘ is held**, so ordinary brightness control keeps working exactly as before. It matches both key-code forms of F1 (brightness-down in media-key mode, or the plain function key in standard-function-key mode), so it works regardless of your *"Use F1, F2 as standard function keys"* setting.
+The Command requirement is deliberate: MirrorGuard only intercepts F1 **when `command` is held**, so ordinary brightness control keeps working exactly as before. It matches both key-code forms of F1 (brightness-down in media-key mode, or the plain function key in standard-function-key mode), so it works regardless of your *"Use F1, F2 as standard function keys"* setting.
 
 ## Menu Bar Icon
 
 The display icon in the menu bar reflects the engine state:
 
-- **Plain displays**: Inactive — ⌘F1 will mirror
-- **Slashed displays**: Guarding — ⌘F1 is blocked
+- **Plain displays**: Inactive — `command` `F1` will mirror
+- **Slashed displays**: Guarding — `command` `F1` is blocked
 
 Click the icon to access:
 
-- **Block ⌘F1 Mirroring** — toggle the guard on/off
+- **Block `command` `F1` Mirroring** — toggle the guard on/off
 - **Status** — current guarding state
 - **Check for Updates…** — Sparkle-driven update check
 - **Settings** — toggle and permissions
@@ -57,7 +57,7 @@ Click the icon to access:
 
 ### Display Mirroring
 
-- **Block ⌘F1 mirroring shortcut** — turn the guard on or off
+- **Block `command` `F1` mirroring shortcut** — turn the guard on or off
 
 ### General
 
@@ -110,13 +110,13 @@ There is no `hidutil` remapping and no persistent system change — the guard ex
 
 ## Troubleshooting
 
-### ⌘F1 still toggles mirroring
+### `command` `F1` still toggles mirroring
 
-Make sure MirrorGuard has **Accessibility** permission in System Settings → Privacy & Security → Accessibility, and that the menu shows **Block ⌘F1 Mirroring** ticked. You may need to remove and re-add the permission if you've rebuilt the app from source.
+Make sure MirrorGuard has **Accessibility** permission in System Settings → Privacy & Security → Accessibility, and that the menu shows **Block `command` `F1` Mirroring** ticked. You may need to remove and re-add the permission if you've rebuilt the app from source.
 
 ### Brightness control stopped working
 
-MirrorGuard only intercepts F1 when ⌘ is held, so bare brightness keys should be unaffected. If they aren't, toggle the guard off and on from the menu, or restart the app.
+MirrorGuard only intercepts F1 when `command` is held, so bare brightness keys should be unaffected. If they aren't, toggle the guard off and on from the menu, or restart the app.
 
 ---
 
