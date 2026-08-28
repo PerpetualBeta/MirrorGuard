@@ -34,7 +34,7 @@ private func mirrorGuardTapCallback(
         if let tap = _mgEventTap {
             CGEvent.tapEnable(tap: tap, enable: true)
         }
-        return Unmanaged.passRetained(event)
+        return Unmanaged.passUnretained(event)
     }
 
     // ⌘ is required in every case below. Bare F1 / brightness (no modifier)
@@ -65,7 +65,7 @@ private func mirrorGuardTapCallback(
     }
 
     // Everything else passes through unchanged.
-    return Unmanaged.passRetained(event)
+    return Unmanaged.passUnretained(event)
 }
 
 // MARK: - MirrorGuardEngine
