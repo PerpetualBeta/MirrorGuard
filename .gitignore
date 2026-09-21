@@ -26,3 +26,4 @@ DerivedData/
 
 # Vendored framework (fetched at build time, not tracked)
 Sparkle.framework/
+.claude/
