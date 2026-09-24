@@ -5,23 +5,32 @@ struct MirrorGuardSettingsContent: View {
 
     var body: some View {
         Section("Display Mirroring") {
-            Toggle("Block \u{2318}F1 mirroring shortcut", isOn: Binding(
-                get: { delegate.engine.isActive },
-                set: { newValue in
-                    Task {
-                        if newValue {
-                            await delegate.engine.requestPermissionAndStart()
-                        } else {
-                            await delegate.engine.stop()
+            // The label is an explicit Text and the toggle's own is hidden: a
+            // labelled control inside a VStack is laid out at zero width.
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("Block \u{2318}F1 mirroring shortcut")
+                    Spacer()
+                    Toggle("Block \u{2318}F1 mirroring shortcut", isOn: Binding(
+                        get: { delegate.engine.isActive },
+                        set: { newValue in
+                            Task {
+                                if newValue {
+                                    await delegate.engine.requestPermissionAndStart()
+                                } else {
+                                    await delegate.engine.stop()
+                                }
+                                delegate.updateIcon()
+                            }
                         }
-                        delegate.updateIcon()
-                    }
+                    ))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
                 }
-            ))
-
-            Text("When on, pressing \u{2318}F1 does nothing instead of toggling display mirroring. All other keys are untouched.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                Text("When on, pressing \u{2318}F1 does nothing instead of toggling display mirroring. All other keys are untouched.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
 
         Section("Permissions") {
