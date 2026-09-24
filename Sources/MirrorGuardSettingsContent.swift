@@ -25,24 +25,26 @@ struct MirrorGuardSettingsContent: View {
         }
 
         Section("Permissions") {
-            HStack {
-                Text("Accessibility")
-                Spacer()
-                if AXIsProcessTrusted() {
-                    Label("Granted", systemImage: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("Accessibility")
+                    Spacer()
+                    if AXIsProcessTrusted() {
+                        Label("Granted", systemImage: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                            .font(.caption)
+                    } else {
+                        Button("Grant Access") {
+                            let opts = [kAXTrustedCheckOptionPrompt.takeRetainedValue(): true] as CFDictionary
+                            AXIsProcessTrustedWithOptions(opts)
+                        }
                         .font(.caption)
-                } else {
-                    Button("Grant Access") {
-                        let opts = [kAXTrustedCheckOptionPrompt.takeRetainedValue(): true] as CFDictionary
-                        AXIsProcessTrustedWithOptions(opts)
                     }
-                    .font(.caption)
                 }
+                Text("MirrorGuard needs Accessibility access to intercept the keyboard shortcut before macOS acts on it.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-            Text("MirrorGuard needs Accessibility access to intercept the keyboard shortcut before macOS acts on it.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
         }
 
         MenuBarVisibilitySettings()
